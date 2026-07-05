@@ -17,9 +17,10 @@ Example output:
 updated 2m ago · https://status.claude.com
 
 Components
-  ● claude.ai            Operational
-  ● platform.claude.ai   Operational
-  ● api.anthropic.com    Operational
+  ● claude.ai                             Operational
+  ● Claude Console (platform.claude.com)  Operational
+  ● Claude API (api.anthropic.com)        Operational
+  ● Claude Code                           Operational
 
 Most Recent Resolved Incident
   ● Elevated errors on Claude 3.5 Sonnet  RESOLVED
