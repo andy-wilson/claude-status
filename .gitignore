@@ -1,0 +1,13 @@
+# Compiled binary
+claude-status
+claude-status.exe
+
+# Go build/test artifacts
+*.test
+*.out
+dist/
+
+# Editor/OS
+.DS_Store
+.idea/
+.vscode/
