@@ -60,6 +60,27 @@ Or install directly onto your `$PATH`:
 go install .
 ```
 
+## Testing
+
+Run the test suite locally:
+
+```sh
+go test ./...
+```
+
+Or with the race detector and a coverage report, as CI runs it:
+
+```sh
+go test -race -coverprofile=coverage.out -covermode=atomic ./...
+go tool cover -func=coverage.out
+```
+
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every push to `main` and on pull requests: `gofmt` check, `go vet`, build, and the test command above. The coverage profile is uploaded as a build artifact. Tests use local `httptest` servers — no network access is required.
+
+## Environment variables
+
+None. The tool requires no environment variables, API keys, or configuration files — the status API is public, and all behavior is controlled via the command-line flags above.
+
 ## Notes
 
 - No dependencies outside the Go standard library.
