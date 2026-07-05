@@ -121,11 +121,11 @@ Exit codes:
 	recentCh := make(chan *Incident, 1)
 
 	go func() {
-		s, err := fetchSummary()
+		s, err := fetchSummary(summaryURL)
 		sumCh <- summaryResult{s, err}
 	}()
 	go func() {
-		recentCh <- fetchRecentResolved()
+		recentCh <- fetchRecentResolved(incidentsURL)
 	}()
 
 	res := <-sumCh
@@ -166,8 +166,8 @@ func fetchRaw(url string) ([]byte, error) {
 	return io.ReadAll(resp.Body)
 }
 
-func fetchSummary() (*Summary, error) {
-	body, err := fetchRaw(summaryURL)
+func fetchSummary(url string) (*Summary, error) {
+	body, err := fetchRaw(url)
 	if err != nil {
 		return nil, err
 	}
@@ -178,8 +178,8 @@ func fetchSummary() (*Summary, error) {
 	return &s, nil
 }
 
-func fetchRecentResolved() *Incident {
-	body, err := fetchRaw(incidentsURL)
+func fetchRecentResolved(url string) *Incident {
+	body, err := fetchRaw(url)
 	if err != nil {
 		return nil
 	}
