@@ -5,6 +5,7 @@ claude-status.exe
 # Go build/test artifacts
 *.test
 *.out
+coverage.html
 dist/
 
 # Editor/OS

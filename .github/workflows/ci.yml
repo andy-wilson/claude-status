@@ -24,11 +24,18 @@ jobs:
       - name: Build
         run: go build ./...
 
-      - name: Test with coverage
-        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
+      - name: Test with coverage (enforces threshold)
+        run: make cover-check
 
-      - name: Coverage summary
-        run: go tool cover -func=coverage.out
+      - name: Publish coverage to job summary
+        if: always()
+        run: |
+          {
+            echo "### Test coverage"
+            echo '```'
+            go tool cover -func=coverage.out
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
