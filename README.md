@@ -63,6 +63,14 @@ Or install directly onto your `$PATH`:
 go install .
 ```
 
+To cross-compile for Linux and macOS on both x86-64 and ARM64, run `make dist`. The binaries are written to `dist/` as `claude-status-<os>-<arch>`. Override `PLATFORMS` to build other targets:
+
+```sh
+make dist                             # linux and darwin, amd64 and arm64
+make dist PLATFORMS=linux/arm64       # a single target
+make dist PLATFORMS="windows/amd64"   # any GOOS/GOARCH pair Go supports
+```
+
 ## Testing
 
 Run the test suite locally:
