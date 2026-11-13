@@ -76,7 +76,7 @@ make cover-html   # same, plus an HTML report in coverage.html
 make cover-check  # same, and fail if total coverage is below the threshold (70%)
 ```
 
-CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every push to `main` and on pull requests: `gofmt` check, `go vet`, build, and `make cover-check` — so a drop below the coverage threshold fails the build. The per-function coverage table is published to the job summary and `coverage.out` is uploaded as a build artifact. Tests use local `httptest` servers — no network access is required.
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every push to `main`, on pull requests, and on manual dispatch (Actions tab or `gh workflow run ci.yml`): `gofmt` check, `go vet`, build, and `make cover-check`, so a drop below the coverage threshold fails the build. The per-function coverage table is published to the job summary and `coverage.out` is uploaded as a build artifact. Tests use local `httptest` servers, so no network access is required.
 
 ## Environment variables
 

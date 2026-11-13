@@ -10,14 +10,15 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+          cache: false
 
       - name: Check formatting
-        run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
+        run: out=$(gofmt -l .) && test -z "$out" || { echo "$out"; exit 1; }
 
       - name: Vet
         run: go vet ./...
@@ -29,7 +30,7 @@ jobs:
         run: make cover-check
 
       - name: Publish coverage to job summary
-        if: always()
+        if: always() && hashFiles('coverage.out') != ''
         run: |
           {
             echo "### Test coverage"
@@ -39,7 +40,8 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
+        if: always() && hashFiles('coverage.out') != ''
+        uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: coverage.out
