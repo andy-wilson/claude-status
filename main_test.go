@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"unicode/utf8"
 )
 
 const summaryFixture = `{
@@ -215,25 +214,6 @@ func TestRenderRecentResolvedShownOnlyWithoutActiveIncidents(t *testing.T) {
 	}
 }
 
-func TestRenderIncidentTruncatesLongBody(t *testing.T) {
-	inc := &Incident{
-		Name:   "Big incident",
-		Status: "resolved",
-		IncidentUpdates: []IncidentUpdate{
-			{Body: strings.Repeat("x", 300)},
-		},
-	}
-	var b bytes.Buffer
-	renderIncident(&b, inc, noColor(), false)
-	out := b.String()
-	if !strings.Contains(out, strings.Repeat("x", 217)+"...") {
-		t.Errorf("long body not truncated:\n%s", out)
-	}
-	if strings.Contains(out, strings.Repeat("x", 218)) {
-		t.Errorf("body longer than truncation limit:\n%s", out)
-	}
-}
-
 func TestComponentBadge(t *testing.T) {
 	c := noColor()
 	for status, wantLabel := range map[string]string{
@@ -290,19 +270,6 @@ func TestColorizer(t *testing.T) {
 	}
 }
 
-func TestRenderIncidentTruncatesOnRuneBoundary(t *testing.T) {
-	inc := &Incident{IncidentUpdates: []IncidentUpdate{{Body: strings.Repeat("é", 300)}}}
-	var b bytes.Buffer
-	renderIncident(&b, inc, noColor(), false)
-	out := b.String()
-	if !utf8.ValidString(out) {
-		t.Errorf("truncated output is not valid UTF-8:\n%q", out)
-	}
-	if !strings.Contains(out, " "+strings.Repeat("é", 217)+"...") {
-		t.Errorf("body not truncated to 217 characters:\n%s", out)
-	}
-}
-
 func TestClean(t *testing.T) {
 	for in, want := range map[string]string{
 		"line one\r\nline two": "line one line two",
@@ -323,15 +290,15 @@ func TestRenderStripsControlCharacters(t *testing.T) {
 		Components: []Component{{Name: "comp\rname", Status: "operational"}},
 		Incidents: []Incident{{
 			Name:            "inc\x1bname",
-			IncidentUpdates: []IncidentUpdate{{Body: "first\r\nsecond"}},
+			IncidentUpdates: []IncidentUpdate{{Body: "first\r\nsecond " + strings.Repeat("x", 300)}},
 		}},
 	}
 	out, _ := renderOut(s, nil)
 	if strings.ContainsAny(out, "\r\x1b") {
 		t.Errorf("control characters reached output:\n%q", out)
 	}
-	if !strings.Contains(out, "first second") {
-		t.Errorf("CRLF not collapsed to a space:\n%q", out)
+	if !strings.Contains(out, "first second "+strings.Repeat("x", 300)) {
+		t.Errorf("CRLF not collapsed or long body cut:\n%q", out)
 	}
 }
 

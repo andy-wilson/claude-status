@@ -388,11 +388,7 @@ func renderIncident(w io.Writer, inc *Incident, c *colorizer, resolved bool) {
 	}
 
 	if len(inc.IncidentUpdates) > 0 {
-		body := clean(inc.IncidentUpdates[0].Body)
-		if r := []rune(body); len(r) > 220 {
-			body = string(r[:217]) + "..."
-		}
-		fmt.Fprintf(w, "    %s %s\n", c.dim("latest:"), body)
+		fmt.Fprintf(w, "    %s %s\n", c.dim("latest:"), clean(inc.IncidentUpdates[0].Body))
 	}
 	if link := clean(inc.Shortlink); link != "" {
 		fmt.Fprintf(w, "    %s\n", c.dim(link))
