@@ -1,13 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 	"time"
+	"unicode/utf8"
 )
 
 const summaryFixture = `{
@@ -27,22 +28,10 @@ const summaryFixture = `{
 
 func noColor() *colorizer { return newColorizer(false) }
 
-func captureStdout(t *testing.T, f func()) string {
-	t.Helper()
-	old := os.Stdout
-	r, w, err := os.Pipe()
-	if err != nil {
-		t.Fatal(err)
-	}
-	os.Stdout = w
-	defer func() { os.Stdout = old }()
-	f()
-	w.Close()
-	out, err := io.ReadAll(r)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return string(out)
+func renderOut(s *Summary, recent *Incident) (string, int) {
+	var b bytes.Buffer
+	exit := render(&b, s, recent, noColor())
+	return b.String(), exit
 }
 
 func serveJSON(t *testing.T, status int, body string) *httptest.Server {
@@ -129,8 +118,7 @@ func TestRenderAllOperational(t *testing.T) {
 		},
 	}
 	s.Page.Name = "Claude"
-	var exit int
-	out := captureStdout(t, func() { exit = render(s, nil, noColor()) })
+	out, exit := renderOut(s, nil)
 	if exit != 0 {
 		t.Errorf("exit = %d, want 0", exit)
 	}
@@ -149,8 +137,7 @@ func TestRenderDegradedComponent(t *testing.T) {
 			{Name: "claude.ai", Status: "degraded_performance"},
 		},
 	}
-	var exit int
-	captureStdout(t, func() { exit = render(s, nil, noColor()) })
+	_, exit := renderOut(s, nil)
 	if exit != 1 {
 		t.Errorf("exit = %d, want 1 for degraded component", exit)
 	}
@@ -158,11 +145,10 @@ func TestRenderDegradedComponent(t *testing.T) {
 
 func TestRenderIndicatorExitCodes(t *testing.T) {
 	for indicator, want := range map[string]int{
-		"none": 0, "minor": 1, "major": 1, "critical": 1, "maintenance": 0, "unknown": 0,
+		"none": 0, "minor": 1, "major": 1, "critical": 1, "maintenance": 0, "unknown": 2, "": 2,
 	} {
 		s := &Summary{Status: StatusIndicator{Indicator: indicator}}
-		var exit int
-		captureStdout(t, func() { exit = render(s, nil, noColor()) })
+		_, exit := renderOut(s, nil)
 		if exit != want {
 			t.Errorf("indicator %q: exit = %d, want %d", indicator, exit, want)
 		}
@@ -180,12 +166,11 @@ func TestRenderActiveIncident(t *testing.T) {
 			Shortlink: "https://stspg.io/abc",
 			StartedAt: &started,
 			IncidentUpdates: []IncidentUpdate{
-				{Status: "investigating", Body: "We are looking into it."},
+				{Body: "We are looking into it."},
 			},
 		}},
 	}
-	var exit int
-	out := captureStdout(t, func() { exit = render(s, nil, noColor()) })
+	out, exit := renderOut(s, nil)
 	if exit != 1 {
 		t.Errorf("exit = %d, want 1", exit)
 	}
@@ -201,11 +186,10 @@ func TestRenderScheduledMaintenance(t *testing.T) {
 	s := &Summary{
 		Status: StatusIndicator{Indicator: "none"},
 		ScheduledMaintenances: []ScheduledMaintenance{
-			{Name: "DB upgrade", Status: "scheduled", Impact: "maintenance", ScheduledFor: &when},
+			{Name: "DB upgrade", ScheduledFor: &when},
 		},
 	}
-	var exit int
-	out := captureStdout(t, func() { exit = render(s, nil, noColor()) })
+	out, exit := renderOut(s, nil)
 	if exit != 0 {
 		t.Errorf("exit = %d, want 0", exit)
 	}
@@ -219,9 +203,15 @@ func TestRenderRecentResolvedShownOnlyWithoutActiveIncidents(t *testing.T) {
 	recent := &Incident{Name: "Old incident", Status: "resolved", ResolvedAt: &resolved}
 
 	quiet := &Summary{Status: StatusIndicator{Indicator: "none"}}
-	out := captureStdout(t, func() { render(quiet, recent, noColor()) })
+	out, _ := renderOut(quiet, recent)
 	if !strings.Contains(out, "Most Recent Resolved Incident") || !strings.Contains(out, "Old incident") {
 		t.Errorf("output missing recent resolved incident:\n%s", out)
+	}
+
+	busy := &Summary{Status: StatusIndicator{Indicator: "minor"}, Incidents: []Incident{{Name: "Live incident"}}}
+	out, _ = renderOut(busy, recent)
+	if strings.Contains(out, "Most Recent Resolved Incident") || strings.Contains(out, "Old incident") {
+		t.Errorf("resolved incident shown alongside active incident:\n%s", out)
 	}
 }
 
@@ -233,7 +223,9 @@ func TestRenderIncidentTruncatesLongBody(t *testing.T) {
 			{Body: strings.Repeat("x", 300)},
 		},
 	}
-	out := captureStdout(t, func() { renderIncident(inc, noColor(), false) })
+	var b bytes.Buffer
+	renderIncident(&b, inc, noColor(), false)
+	out := b.String()
 	if !strings.Contains(out, strings.Repeat("x", 217)+"...") {
 		t.Errorf("long body not truncated:\n%s", out)
 	}
@@ -295,5 +287,128 @@ func TestColorizer(t *testing.T) {
 	off := newColorizer(false)
 	if got := off.red("x"); got != "x" {
 		t.Errorf("colorizer off: got %q, want plain", got)
+	}
+}
+
+func TestRenderIncidentTruncatesOnRuneBoundary(t *testing.T) {
+	inc := &Incident{IncidentUpdates: []IncidentUpdate{{Body: strings.Repeat("é", 300)}}}
+	var b bytes.Buffer
+	renderIncident(&b, inc, noColor(), false)
+	out := b.String()
+	if !utf8.ValidString(out) {
+		t.Errorf("truncated output is not valid UTF-8:\n%q", out)
+	}
+	if !strings.Contains(out, " "+strings.Repeat("é", 217)+"...") {
+		t.Errorf("body not truncated to 217 characters:\n%s", out)
+	}
+}
+
+func TestClean(t *testing.T) {
+	for in, want := range map[string]string{
+		"line one\r\nline two": "line one line two",
+		"tab\there":            "tab here",
+		"\x1b[31mred\x1b[0m":   "[31mred [0m",
+		"  plain text  ":       "plain text",
+		"unicode – stays é ✓":  "unicode – stays é ✓",
+	} {
+		if got := clean(in); got != want {
+			t.Errorf("clean(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestRenderStripsControlCharacters(t *testing.T) {
+	s := &Summary{
+		Status:     StatusIndicator{Indicator: "minor", Description: "bad\x1b[2Jdesc"},
+		Components: []Component{{Name: "comp\rname", Status: "operational"}},
+		Incidents: []Incident{{
+			Name:            "inc\x1bname",
+			IncidentUpdates: []IncidentUpdate{{Body: "first\r\nsecond"}},
+		}},
+	}
+	out, _ := renderOut(s, nil)
+	if strings.ContainsAny(out, "\r\x1b") {
+		t.Errorf("control characters reached output:\n%q", out)
+	}
+	if !strings.Contains(out, "first second") {
+		t.Errorf("CRLF not collapsed to a space:\n%q", out)
+	}
+}
+
+func TestRenderPadsByCharacterNotByte(t *testing.T) {
+	s := &Summary{
+		Status: StatusIndicator{Indicator: "none"},
+		Components: []Component{
+			{Name: "aé", Status: "operational"},
+			{Name: "abc", Status: "operational"},
+		},
+	}
+	out, _ := renderOut(s, nil)
+	for _, want := range []string{"● aé   Operational", "● abc  Operational"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestExitCodeUnknownIndicatorWins(t *testing.T) {
+	s := &Summary{Incidents: []Incident{{Name: "x"}}}
+	if got := exitCode(s); got != 2 {
+		t.Errorf("exitCode = %d, want 2 for missing indicator with active incident", got)
+	}
+}
+
+// runWith points the tool at local servers and runs it with args.
+func runWith(t *testing.T, summaryStatus int, summaryBody string, args ...string) (stdout, stderr string, code int) {
+	t.Helper()
+	oldS, oldI := summaryURL, incidentsURL
+	t.Cleanup(func() { summaryURL, incidentsURL = oldS, oldI })
+	summaryURL = serveJSON(t, summaryStatus, summaryBody).URL
+	incidentsURL = serveJSON(t, http.StatusOK, `{"incidents": []}`).URL
+	var out, errOut bytes.Buffer
+	code = run(args, &out, &errOut)
+	return out.String(), errOut.String(), code
+}
+
+func TestRun(t *testing.T) {
+	const major = `{"status": {"indicator": "major", "description": "Major Outage"}}`
+	tests := []struct {
+		name       string
+		status     int
+		body       string
+		args       []string
+		wantCode   int
+		wantStdout string
+		wantStderr string
+	}{
+		{"healthy", 200, summaryFixture, nil, 0, "All Systems Operational", ""},
+		{"degraded", 200, major, nil, 1, "Major Outage", ""},
+		{"wrong shape", 200, `{}`, nil, 2, "", "unrecognised status indicator"},
+		{"http error", 500, "boom", nil, 2, "", "HTTP 500"},
+		{"json healthy", 200, summaryFixture, []string{"--json"}, 0, summaryFixture, ""},
+		{"json degraded", 200, major, []string{"--json"}, 1, major, ""},
+		{"json wrong shape", 200, `{}`, []string{"--json"}, 2, "", "unrecognised status indicator"},
+		{"json not json", 200, "<html>", []string{"--json"}, 2, "", "error: "},
+		{"json http error", 500, "boom", []string{"--json"}, 2, "", "HTTP 500"},
+		{"bad flag", 200, summaryFixture, []string{"--nocolor"}, 3, "", "Usage:"},
+		{"positional arg", 200, summaryFixture, []string{"json"}, 3, "", "unexpected argument: json"},
+		{"help", 200, summaryFixture, []string{"-h"}, 0, "", "Usage:"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			stdout, stderr, code := runWith(t, tt.status, tt.body, tt.args...)
+			if code != tt.wantCode {
+				t.Errorf("exit = %d, want %d (stderr: %s)", code, tt.wantCode, stderr)
+			}
+			if !strings.Contains(stdout, tt.wantStdout) {
+				t.Errorf("stdout missing %q:\n%s", tt.wantStdout, stdout)
+			}
+			if !strings.Contains(stderr, tt.wantStderr) {
+				t.Errorf("stderr missing %q:\n%s", tt.wantStderr, stderr)
+			}
+			if tt.name == "json not json" && stdout != "" {
+				t.Errorf("non-JSON body was written to stdout: %q", stdout)
+			}
+		})
 	}
 }

@@ -13,7 +13,7 @@ claude-status [flags]
 Example output:
 
 ```
-✓ Claude Status — All Systems Operational
+✓ Claude Status - All Systems Operational
 updated 2m ago · https://status.claude.com
 
 Components
@@ -44,11 +44,14 @@ Useful for scripting and monitoring:
 | ---- | ---------------------------------------------------- |
 | `0`  | All systems operational                              |
 | `1`  | One or more components degraded, or an active incident |
-| `2`  | Unable to reach the status page                      |
+| `2`  | Unable to reach the status page, or its response was not recognised |
+| `3`  | Invalid command-line usage                           |
+
+The same exit codes apply with `--json`.
 
 ## Install
 
-Requires Go 1.26+.
+Requires Go 1.26.2+.
 
 ```sh
 go build -o claude-status .
@@ -80,7 +83,7 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs only on manual 
 
 ## Environment variables
 
-None. The tool requires no environment variables, API keys, or configuration files — the status API is public, and all behavior is controlled via the command-line flags above.
+None. The tool requires no environment variables, API keys, or configuration files: the status API is public, and all behavior is controlled via the command-line flags above.
 
 ## Notes
 

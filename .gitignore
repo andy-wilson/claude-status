@@ -1,6 +1,6 @@
 # Compiled binary
-claude-status
-claude-status.exe
+/claude-status
+/claude-status.exe
 
 # Go build/test artifacts
 *.test
