@@ -89,7 +89,8 @@ Usage:
 
 Flags:
   --json        output the raw JSON summary from status.claude.com
-  --no-color    disable ANSI color output (auto-disabled when stdout isn't a TTY)
+  --no-color    disable ANSI color output (auto-disabled on stdout or stderr
+                when that stream isn't a TTY)
   -h, --help    show this help
 
 Exit codes:

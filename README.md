@@ -17,15 +17,22 @@ Example output:
 updated 2m ago · https://status.claude.com
 
 Components
-  ● claude.ai                             Operational
-  ● Claude Console (platform.claude.com)  Operational
-  ● Claude API (api.anthropic.com)        Operational
-  ● Claude Code                           Operational
+  ● claude.ai                                          Operational
+  ● Claude Platform on AWS                             Operational
+  ● Claude Console (platform.claude.com)               Operational
+  ● Claude in Microsoft Foundry                        Operational
+  ● Claude API (api.anthropic.com)                     Operational
+  ● Claude Models on Google Cloud (Anthropic managed)  Operational
+  ● Claude Code                                        Operational
+  ● Claude Cowork                                      Operational
+  ● Claude for Government                              Operational
+  ● Claude on Cloud Platforms                          Operational
 
 Most Recent Resolved Incident
-  ● Elevated errors on Claude 3.5 Sonnet  RESOLVED
+  ● Elevated errors on Fable 52 and Mythos 52  RESOLVED
     resolved 3d ago
-    ...
+    latest: Overloaded errors on Fable 5.2 and Mythos 5.2 for four minutes. Incident has been mitigated.
+    https://stspg.io/pytn9v8p2zc7
 ```
 
 ### Flags
@@ -33,7 +40,7 @@ Most Recent Resolved Incident
 | Flag         | Description                                                    |
 | ------------ | -------------------------------------------------------------- |
 | `--json`     | Output the raw JSON summary from status.claude.com              |
-| `--no-color` | Disable ANSI colors (auto-disabled when stdout isn't a TTY)     |
+| `--no-color` | Disable ANSI colors (auto-disabled on stdout or stderr when that stream isn't a TTY) |
 | `-h, --help` | Show help                                                       |
 
 ### Exit codes
