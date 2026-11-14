@@ -35,6 +35,33 @@ Most Recent Resolved Incident
     https://stspg.io/pytn9v8p2zc7
 ```
 
+```
+⚠ Claude Status — Partial System Outage
+updated 5m ago · https://status.claude.com
+
+Components
+  ● claude.ai                                          Major Outage
+  ● Claude Platform on AWS                             Operational
+  ● Claude Console (platform.claude.com)               Operational
+  ● Claude in Microsoft Foundry                        Operational
+  ● Claude API (api.anthropic.com)                     Operational
+  ● Claude Models on Google Cloud (Anthropic managed)  Operational
+  ● Claude Code                                        Operational
+  ● Claude Cowork                                      Degraded Performance
+  ● Claude for Government                              Operational
+  ● Claude on Cloud Platforms                          Operational
+
+Active Incidents
+  ⚠ Elevated errors on claude.ai, Claude Code, and platform.claude.com  MONITORING
+    started 1h14m ago
+    latest: A fix has been deployed for the issue affecting Claude services and we are monitoring for recovery.
+    https://stspg.io/6kqyd0c5b1gr
+  ⚠ Elevated errors affecting the Microsoft 365 connector  IDENTIFIED
+    started 17h20m ago
+    latest: This issue is caused by a Microsoft 365 service incident, and mail, calendar and search tools in the Microsoft 365 connector are still failing for most requests. Claude for Outlook remains affected. You can follow Mic...
+    https://stspg.io/m0rbx38nmy1c
+```
+
 ### Flags
 
 | Flag         | Description                                                    |
