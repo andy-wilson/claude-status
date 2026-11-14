@@ -2,6 +2,8 @@
 
 A small CLI that checks the [Anthropic / Claude status page](https://status.claude.com) from your terminal.
 
+Getting the API error from within Claude Code is annoying. Having to go look at the claude status page in a browser more so. Hence, a basic CLI tool to go fetch the status. Yes there are more generic tools to fetch status for apps/companies who use Atlassian Statuspage, but I wanted something of basic which did *one thing*™.
+
 It fetches the public Statuspage API and prints the overall status, per-component health, any active incidents or scheduled maintenance, and (when everything is quiet) the most recently resolved incident.
 
 ## Usage
